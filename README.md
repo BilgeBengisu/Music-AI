@@ -1,1 +1,1 @@
-## Course Work for Spring 2025 *Music & AI* at New College of Florida
+## *Music & AI* Course Work at New College of Florida - Spring 2025
