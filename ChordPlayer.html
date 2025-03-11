@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en" ng-app="chordApp">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Chord Keyboard</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.2/angular.min.js"></script>
+    <style>
+        body { text-align: center; font-family: Arial, sans-serif; }
+        .keyboard { display: flex; justify-content: center; margin-top: 20px; }
+        .key { width: 40px; height: 120px; margin: 2px; background: white; border: 1px solid black; display: inline-block; cursor: pointer; position: relative; }
+        .key.black { width: 30px; height: 80px; background: black; margin-left: -15px; margin-right: -15px; z-index: 1; position: relative; }
+        .highlight { background: lightblue !important; }
+        .key-label { position: absolute; bottom: 5px; width: 100%; font-size: 12px; text-align: center; }
+    </style>
+</head>
+<body ng-controller="ChordController">
+    <h1>Chord Keyboard</h1>
+    <div class="keyboard">
+        <div ng-repeat="noteObj in keys" 
+             class="key" 
+             ng-class="{'black': noteObj.note.includes('#'), 'highlight': highlightedKeys.includes(noteObj)}" 
+             ng-click="playChord(noteObj)"
+             data-note="{{noteObj.note}}">
+            <div class='key-label'>{{noteObj.note}}</div>
+        </div>
+    </div>
+    
+    <script>
+        angular.module('chordApp', []).controller('ChordController', function($scope) {
+            const baseKeys = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+            
+            // Create 25-key keyboard
+            $scope.keys = [];
+            for (let i = 0; i < 25; i++) {
+                $scope.keys.push({ note: baseKeys[i % 12], index: i });
+            }
+            
+            $scope.chords = {
+                "C": [0, 4, 7],
+                "D": [2, 6, 9],
+                "E": [4, 8, 11],
+                "F": [5, 9, 12],
+                "G": [7, 11, 14],
+                "A": [9, 13, 16],
+                "B": [11, 15, 18]
+            };
+            
+            $scope.highlightedKeys = [];
+            
+            $scope.playChord = function(noteObj) {
+                $scope.highlightedKeys = [];
+                if ($scope.chords[noteObj.note]) {
+                    let baseIndex = noteObj.index;
+                    let chordOffsets = $scope.chords[noteObj.note];
+                    
+                    chordOffsets.forEach(offset => {
+                        let chordKey = $scope.keys.find(k => k.index === baseIndex + (offset - chordOffsets[0]));
+                        if (chordKey) {
+                            $scope.highlightedKeys.push(chordKey);
+                        }
+                    });
+                }
+                $scope.generateChordSound($scope.highlightedKeys.map(k => k.note));
+            };
+            
+            $scope.generateChordSound = function(notes) {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                notes.forEach((note, index) => {
+                    let oscillator = audioContext.createOscillator();
+                    let gainNode = audioContext.createGain();
+                    oscillator.type = "sine";
+                    oscillator.frequency.value = $scope.getFrequency(note);
+                    oscillator.connect(gainNode);
+                    gainNode.connect(audioContext.destination);
+                    gainNode.gain.setValueAtTime(0.5, audioContext.currentTime);
+                    oscillator.start(audioContext.currentTime + index * 0.05);
+                    oscillator.stop(audioContext.currentTime + 1);
+                });
+            };
+            
+            $scope.getFrequency = function(note) {
+                const noteFrequencies = {
+                    "C": 261.63, "C#": 277.18, "D": 293.66, "D#": 311.13, "E": 329.63, "F": 349.23, 
+                    "F#": 369.99, "G": 392.00, "G#": 415.30, "A": 440.00, "A#": 466.16, "B": 493.88
+                };
+                return noteFrequencies[note] || 440;
+            };
+        });
+    </script>
+</body>
+</html>
